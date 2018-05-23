@@ -60,3 +60,19 @@ AUTHENTICATION_BACKENDS = (
     'oauth2_provider.backends.OAuth2Backend',
 )
 ```
+
+
+Local development
+=================
+
+Have [Docker](https://www.docker.com/) installed as a first step.
+
+```bash
+docker-compose -f docker-compose-dev.yml build
+```
+
+To run the tests:
+
+```bash
+docker-compose -f docker-compose-dev.yml run --entrypoint '/usr/bin/env' --rm dot_jwt tox
+```

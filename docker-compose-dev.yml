@@ -1,0 +1,31 @@
+version: "2.1"
+
+services:
+  dot_jwt_postgres:
+    container_name: dot_jwt_postgres
+    healthcheck:
+      test: "pg_isready -h localhost -p 5432 -q -U postgres"
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    image: postgres:10.4
+    environment:
+      POSTGRES_DB: dot_jwt
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    volumes:
+      - /var/lib/postgresql/data/
+    ports:
+      - "5432:5432"
+    restart: always
+
+  dot_jwt:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: dot_jwt
+    image: dot_jwt
+    volumes:
+      - .:/code
+    depends_on:
+      - dot_jwt_postgres
