@@ -75,6 +75,8 @@ INSTALLED_APPS = (
     "django.contrib.staticfiles",
     "django.contrib.admin",
 
+    "oauth2_provider",
+    "oauth2_provider_jwt",
     "tests",
 )
 
