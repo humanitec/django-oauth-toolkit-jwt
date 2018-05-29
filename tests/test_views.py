@@ -2,7 +2,7 @@ import base64
 import json
 
 from django.contrib.auth import get_user_model
-from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from oauth2_provider.models import get_application_model
 from oauth2_provider.settings import oauth2_settings
@@ -25,7 +25,13 @@ def get_basic_auth_header(user, password):
     return auth_headers
 
 
-class BaseTest(TestCase):
+def payload_enricher(request):
+    return {
+        'sub': 'unique-user',
+    }
+
+
+class PasswordTokenViewTest(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
         self.test_user = UserModel.objects.create_user(
@@ -49,8 +55,6 @@ class BaseTest(TestCase):
         self.test_user.delete()
         self.dev_user.delete()
 
-
-class TestPasswordTokenView(BaseTest):
     def test_get_token(self):
         """
         Request an access token using Resource Owner Password Flow
@@ -70,6 +74,28 @@ class TestPasswordTokenView(BaseTest):
 
         content = json.loads(response.content.decode("utf-8"))
         self.assertEqual(content["token_type"], "Bearer")
+        self.assertIs(type(content["access_token_jwt"]), str)
         self.assertEqual(content["scope"], "read write")
         self.assertEqual(content["expires_in"],
                          oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
+
+    @override_settings(
+        JWT_PAYLOAD_ENRICHER='tests.test_views.payload_enricher')
+    def test_get_enriched_jwt(self):
+        token_request_data = {
+            "grant_type": "password",
+            "username": "test_user",
+            "password": "123456",
+        }
+        auth_headers = get_basic_auth_header(self.application.client_id,
+                                             self.application.client_secret)
+
+        response = self.client.post(
+            reverse("oauth2_provider_jwt:token"), data=token_request_data,
+            **auth_headers)
+        content = json.loads(response.content.decode("utf-8"))
+        access_token_jwt = content["access_token_jwt"]
+        headers, payload, verify_signature = access_token_jwt.split(".")
+        payload += '=' * (-len(payload) % 4)  # add padding
+        payload_dict = json.loads(base64.b64decode(payload).decode("utf-8"))
+        self.assertDictContainsSubset({'sub': 'unique-user'}, payload_dict)
