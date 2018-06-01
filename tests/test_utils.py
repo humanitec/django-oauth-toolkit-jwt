@@ -1,7 +1,10 @@
 import base64
 from datetime import datetime, timedelta
 import json
-from unittest.mock import patch
+try:
+    from unittest.mock import patch
+except ImportError:
+    from mock import patch
 from unittest import TestCase as PythonTestCase
 
 from django.core.exceptions import ImproperlyConfigured
@@ -79,10 +82,11 @@ class EncodePayloadTest(PythonTestCase):
     def test_encode_payload(self):
         payload_in = self._get_payload()
         encoded = utils.encode_payload(payload_in)
-        self.assertIs(type(encoded), str)
+        self.assertIn(type(encoded).__name__, ('unicode', 'str'))
         headers, payload, verify_signature = encoded.split(".")
-        self.assertEqual(base64.b64decode(headers),
-                         b'{"typ":"JWT","alg":"RS256"}')
+        self.assertDictEqual(
+            json.loads(base64.b64decode(headers)),
+            {"typ": "JWT", "alg": "RS256"})
         payload += '=' * (-len(payload) % 4)  # add padding
         self.assertEqual(
             json.loads(base64.b64decode(payload).decode("utf-8")),

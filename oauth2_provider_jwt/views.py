@@ -26,6 +26,9 @@ class TokenView(views.TokenView):
         if response.status_code == 200 and 'access_token' in content:
             content['access_token_jwt'] = self._get_access_token_jwt(
                 request, content['expires_in'])
-            content = bytes(json.dumps(content), 'utf-8')
+            try:
+                content = bytes(json.dumps(content), 'utf-8')
+            except TypeError:
+                content = bytes(json.dumps(content).encode("utf-8"))
             response.content = content
         return response
