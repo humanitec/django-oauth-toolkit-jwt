@@ -9,6 +9,7 @@ from unittest import TestCase as PythonTestCase
 
 from django.core.exceptions import ImproperlyConfigured
 from django.test import override_settings
+import jwt
 from oauth2_provider_jwt import utils
 
 
@@ -61,7 +62,7 @@ class GeneratePayloadTest(PythonTestCase):
         )
 
 
-class EncodePayloadTest(PythonTestCase):
+class EncodeJWTTest(PythonTestCase):
     def _get_payload(self):
         now = datetime.utcnow()
         return {
@@ -74,14 +75,14 @@ class EncodePayloadTest(PythonTestCase):
         }
 
     @override_settings(JWT_PRIVATE_KEY_RSA_ISSUER='')
-    def test_encode_payload_no_private_key_in_setting(self):
+    def test_encode_jwt_no_private_key_in_setting(self):
         payload = self._get_payload()
         self.assertRaises(ImproperlyConfigured,
-                          utils.encode_payload, payload)
+                          utils.encode_jwt, payload)
 
-    def test_encode_payload(self):
+    def test_encode_jwt(self):
         payload_in = self._get_payload()
-        encoded = utils.encode_payload(payload_in)
+        encoded = utils.encode_jwt(payload_in)
         self.assertIn(type(encoded).__name__, ('unicode', 'str'))
         headers, payload, verify_signature = encoded.split(".")
         self.assertDictEqual(
@@ -91,3 +92,41 @@ class EncodePayloadTest(PythonTestCase):
         self.assertEqual(
             json.loads(base64.b64decode(payload).decode("utf-8")),
             payload_in)
+
+
+class DecodeJWTTest(PythonTestCase):
+    def _get_payload(self):
+        now = datetime.utcnow()
+        return {
+            'iss': 'issuer',
+            'exp': now + timedelta(seconds=10),
+            'iat': now,
+            'sub': 'subject',
+            'usr': 'some_usr',
+            'org': 'some_org',
+        }
+
+    def test_decode_jwt_invalid(self):
+        self.assertRaises(jwt.InvalidTokenError, utils.decode_jwt, 'abc')
+
+    @override_settings(JWT_PUBLIC_KEY_RSA_ISSUER='')
+    def test_decode_jwt_public_key_not_found(self):
+        payload = self._get_payload()
+        jwt_value = utils.encode_jwt(payload)
+        self.assertRaises(ImproperlyConfigured, utils.decode_jwt,
+                          jwt_value)
+
+    def test_decode_jwt_expired(self):
+        payload = self._get_payload()
+        now = datetime.utcnow()
+        payload['exp'] = now - timedelta(seconds=1)
+        payload['iat'] = now
+        jwt_value = utils.encode_jwt(payload)
+        self.assertRaises(jwt.ExpiredSignature, utils.decode_jwt,
+                          jwt_value)
+
+    def test_decode_jwt(self):
+        payload = self._get_payload()
+        jwt_value = utils.encode_jwt(payload)
+        payload_out = utils.decode_jwt(jwt_value)
+        self.assertDictEqual(payload, payload_out)

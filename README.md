@@ -122,6 +122,36 @@ def payload_enricher(request):
 ```
 
 
+Consumer configuration
+______________________
+
+In order to let users authenticate using JWT header and token we need to
+add the following configuration:
+
+```
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        ...
+        'oauth2_provider_jwt.authentication.JWTAuthentication',
+    )
+}
+```
+
+Also, you will need to add to the settings every public RSA key of all the
+possible token issuers using a variable `JWT_PUBLIC_KEY_RSA_<JWT_ISSUER>`:
+
+```
+# settings.py
+JWT_PUBLIC_KEY_RSA_ONEISSUER = """
+-----BEGIN PUBLIC KEY-----
+MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAbCmbRUsLrsv0/Cq7DVDpUooPS1V2sr0E
+hTZAZmJhid2o/+ya/28muuoQgknEoJz32bKeWuYZrFkRKUrGFnlxHwIDAQAB
+-----END PUBLIC KEY-----
+"""
+```
+
+
 Local development
 =================
 

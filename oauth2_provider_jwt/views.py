@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 from oauth2_provider import views
 
-from .utils import generate_payload, encode_payload
+from .utils import generate_payload, encode_jwt
 
 
 class TokenView(views.TokenView):
@@ -17,7 +17,7 @@ class TokenView(views.TokenView):
             fn = import_string(payload_enricher)
             extra_data = fn(request)
         payload = generate_payload(issuer, expires_in, **extra_data)
-        token = encode_payload(payload)
+        token = encode_jwt(payload)
         return token
 
     def post(self, request, *args, **kwargs):
