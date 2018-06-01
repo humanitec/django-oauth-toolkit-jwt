@@ -131,8 +131,20 @@ Have [Docker](https://www.docker.com/) installed as a first step.
 docker-compose -f docker-compose-dev.yml build
 ```
 
-To run the tests:
+To run all the tests:
 
 ```bash
 docker-compose -f docker-compose-dev.yml run --entrypoint '/usr/bin/env' --rm dot_jwt tox
+```
+
+To run the tests only for Python 2.7:
+
+```bash
+docker-compose -f docker-compose-dev.yml run --entrypoint '/usr/bin/env' --rm dot_jwt tox -e py27
+```
+
+Or to run just one test:
+
+```bash
+docker-compose -f docker-compose-dev.yml run --entrypoint '/usr/bin/env' --rm dot_jwt tox -- -x tests/test_views.py::PasswordTokenViewTest::test_get_enriched_jwt
 ```
