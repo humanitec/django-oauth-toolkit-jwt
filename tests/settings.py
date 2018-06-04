@@ -74,8 +74,9 @@ INSTALLED_APPS = (
     "django.contrib.sites",
     "django.contrib.staticfiles",
     "django.contrib.admin",
-
     "oauth2_provider",
+    'rest_framework',
+
     "oauth2_provider_jwt",
     "tests",
 )
@@ -143,3 +144,9 @@ MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAbCmbRUsLrsv0/Cq7DVDpUooPS1V2sr0E
 hTZAZmJhid2o/+ya/28muuoQgknEoJz32bKeWuYZrFkRKUrGFnlxHwIDAQAB
 -----END PUBLIC KEY-----
 """
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider_jwt.authentication.JWTAuthentication',
+    ),
+}

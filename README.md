@@ -122,6 +122,36 @@ def payload_enricher(request):
 ```
 
 
+Consumer configuration
+______________________
+
+In order to let users authenticate using JWT header and token we need to
+add the following configuration:
+
+```
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        ...
+        'oauth2_provider_jwt.authentication.JWTAuthentication',
+    )
+}
+```
+
+Also, you will need to add to the settings every public RSA key of all the
+possible token issuers using a variable `JWT_PUBLIC_KEY_RSA_<JWT_ISSUER>`:
+
+```
+# settings.py
+JWT_PUBLIC_KEY_RSA_ONEISSUER = """
+-----BEGIN PUBLIC KEY-----
+MFswDQYJKoZIhvcNAQEBBQADSgAwRwJAbCmbRUsLrsv0/Cq7DVDpUooPS1V2sr0E
+hTZAZmJhid2o/+ya/28muuoQgknEoJz32bKeWuYZrFkRKUrGFnlxHwIDAQAB
+-----END PUBLIC KEY-----
+"""
+```
+
+
 Local development
 =================
 
@@ -131,8 +161,20 @@ Have [Docker](https://www.docker.com/) installed as a first step.
 docker-compose -f docker-compose-dev.yml build
 ```
 
-To run the tests:
+To run all the tests:
 
 ```bash
 docker-compose -f docker-compose-dev.yml run --entrypoint '/usr/bin/env' --rm dot_jwt tox
+```
+
+To run the tests only for Python 2.7:
+
+```bash
+docker-compose -f docker-compose-dev.yml run --entrypoint '/usr/bin/env' --rm dot_jwt tox -e py27
+```
+
+Or to run just one test:
+
+```bash
+docker-compose -f docker-compose-dev.yml run --entrypoint '/usr/bin/env' --rm dot_jwt tox -- -x tests/test_views.py::PasswordTokenViewTest::test_get_enriched_jwt
 ```

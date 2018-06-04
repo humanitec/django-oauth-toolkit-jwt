@@ -1,4 +1,6 @@
+import base64
 from datetime import datetime, timedelta
+import json
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -30,7 +32,7 @@ def generate_payload(issuer, expires_in, **extra_data):
     return payload
 
 
-def encode_payload(payload, headers=None):
+def encode_jwt(payload, headers=None):
     """
     :type payload: dict
     :type headers: dict, None
@@ -44,3 +46,25 @@ def encode_payload(payload, headers=None):
     encoded = jwt.encode(payload, private_key, algorithm='RS256',
                          headers=headers)
     return encoded.decode("utf-8")
+
+
+def decode_jwt(jwt_value):
+    """
+    :type jwt_value: str
+    """
+    try:
+        headers_enc, payload_enc, verify_signature = jwt_value.split(".")
+    except ValueError:
+        raise jwt.InvalidTokenError()
+
+    payload_enc += '=' * (-len(payload_enc) % 4)  # add padding
+    payload = json.loads(base64.b64decode(payload_enc).decode("utf-8"))
+
+    public_key_name = 'JWT_PUBLIC_KEY_RSA_{}'.format(payload['iss'].upper())
+    public_key = getattr(settings, public_key_name, None)
+    if not public_key:
+        raise ImproperlyConfigured('Missing setting {}'.format(
+                                   public_key_name))
+
+    decoded = jwt.decode(jwt_value, public_key, algorithms='RS256')
+    return decoded

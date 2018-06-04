@@ -74,7 +74,8 @@ class PasswordTokenViewTest(TestCase):
 
         content = json.loads(response.content.decode("utf-8"))
         self.assertEqual(content["token_type"], "Bearer")
-        self.assertIs(type(content["access_token_jwt"]), str)
+        self.assertIn(type(content["access_token_jwt"]).__name__,
+                      ('unicode', 'str'))
         self.assertEqual(content["scope"], "read write")
         self.assertEqual(content["expires_in"],
                          oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)

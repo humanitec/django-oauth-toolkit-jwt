@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils.module_loading import import_string
 from oauth2_provider import views
 
-from .utils import generate_payload, encode_payload
+from .utils import generate_payload, encode_jwt
 
 
 class TokenView(views.TokenView):
@@ -17,7 +17,7 @@ class TokenView(views.TokenView):
             fn = import_string(payload_enricher)
             extra_data = fn(request)
         payload = generate_payload(issuer, expires_in, **extra_data)
-        token = encode_payload(payload)
+        token = encode_jwt(payload)
         return token
 
     def post(self, request, *args, **kwargs):
@@ -26,6 +26,9 @@ class TokenView(views.TokenView):
         if response.status_code == 200 and 'access_token' in content:
             content['access_token_jwt'] = self._get_access_token_jwt(
                 request, content['expires_in'])
-            content = bytes(json.dumps(content), 'utf-8')
+            try:
+                content = bytes(json.dumps(content), 'utf-8')
+            except TypeError:
+                content = bytes(json.dumps(content).encode("utf-8"))
             response.content = content
         return response
