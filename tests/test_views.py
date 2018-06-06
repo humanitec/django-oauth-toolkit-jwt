@@ -1,14 +1,23 @@
 import base64
+import datetime
 import json
+try:
+    from urllib.parse import urlencode
+except ImportError:
+    from urllib import urlencode
 
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
-from oauth2_provider.models import get_application_model
+from django.utils import timezone
+from oauth2_provider.models import (
+    get_application_model, get_access_token_model, get_refresh_token_model)
 from oauth2_provider.settings import oauth2_settings
 
 Application = get_application_model()
 UserModel = get_user_model()
+AccessToken = get_access_token_model()
+RefreshToken = get_refresh_token_model()
 
 
 def get_basic_auth_header(user, password):
@@ -100,3 +109,30 @@ class PasswordTokenViewTest(TestCase):
         payload += '=' * (-len(payload) % 4)  # add padding
         payload_dict = json.loads(base64.b64decode(payload).decode("utf-8"))
         self.assertDictContainsSubset({'sub': 'unique-user'}, payload_dict)
+
+    def test_refresh_token(self):
+        access_token = AccessToken.objects.create(
+            user=self.test_user, token="1234567890",
+            application=self.application,
+            expires=timezone.now() + datetime.timedelta(days=1),
+            scope="read write"
+        )
+        refresh_token = RefreshToken.objects.create(
+            access_token=access_token,
+            user=self.test_user,
+            application=self.application
+        )
+
+        request_data = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token.token,
+        }
+        auth_headers = get_basic_auth_header(self.application.client_id,
+                                             self.application.client_secret)
+        response = self.client.post(
+            reverse("oauth2_provider_jwt:token"), data=request_data,
+            **auth_headers)
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertIn(type(content["access_token_jwt"]).__name__,
+                      ('unicode', 'str'))
