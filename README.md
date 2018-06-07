@@ -23,7 +23,7 @@ Add to your pip requirements:
 git+https://github.com/Humanitec/django-oauth-toolkit-jwt#egg=django-oauth-toolkit-jwt
 ```
 
-Add oauth2_provider to your INSTALLED_APPS:
+Add oauth2_provider and oauth2_provider_jwt to your INSTALLED_APPS:
 
 ```
 # settings.py
@@ -31,6 +31,7 @@ Add oauth2_provider to your INSTALLED_APPS:
 INSTALLED_APPS = (
     ...
     'oauth2_provider',
+    'oauth2_provider_jwt',
 )
 ```
 
