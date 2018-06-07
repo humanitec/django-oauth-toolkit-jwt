@@ -54,8 +54,6 @@ Add to your MIDDLEWARE the following:
 MIDDLEWARE_THIRD_PARTIES = [
     ...
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
-    'oauth2_provider_jwt.middleware.OAuth2JWTMiddleware',
-
 ]
 ```
 
