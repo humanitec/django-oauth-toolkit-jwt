@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 from os.path import join, dirname, abspath
 from setuptools import setup
@@ -19,5 +19,10 @@ def load_requirements(load_dependency_links=False):
 
 
 setup(
+    author=u'Rafael Muñoz Cárdenas',
+    author_email='rafael@humanitec.com',
     install_requires=load_requirements(),
+    packages=[
+        'oauth2_provider_jwt',
+    ],
 )
