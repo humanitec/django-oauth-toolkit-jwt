@@ -25,7 +25,7 @@ class TokenView(views.TokenView):
 
     @staticmethod
     def _is_jwt_config_set():
-        issuer = getattr(settings, 'JWT_ISSUER', None)
+        issuer = getattr(settings, 'JWT_ISSUER', '')
         private_key_name = 'JWT_PRIVATE_KEY_RSA_{}'.format(issuer.upper())
         private_key = getattr(settings, private_key_name, None)
         if issuer and private_key:

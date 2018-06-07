@@ -10,6 +10,7 @@ try:
 except ImportError:
     from mock import patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
@@ -77,6 +78,12 @@ class PasswordTokenViewTest(TestCase):
     @override_settings(JWT_ISSUER='')
     @override_settings(JWT_PRIVATE_KEY_RSA_API='somevalue')
     def test_is_jwt_config_not_set_missing_issuer(self):
+        self.assertFalse(TokenView._is_jwt_config_set())
+
+    @override_settings()
+    @override_settings(JWT_PRIVATE_KEY_RSA_API='somevalue')
+    def test_is_jwt_config_not_set_none_issuer(self):
+        del settings.JWT_ISSUER
         self.assertFalse(TokenView._is_jwt_config_set())
 
     @override_settings(JWT_ISSUER='api')
