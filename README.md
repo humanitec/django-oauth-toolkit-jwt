@@ -23,6 +23,12 @@ Add to your pip requirements:
 git+https://github.com/Humanitec/django-oauth-toolkit-jwt#egg=django-oauth-toolkit-jwt
 ```
 
+
+Producer configuration
+______________________
+
+To use this library to issue a token, configure the project as it follows:
+
 Add oauth2_provider and oauth2_provider_jwt to your INSTALLED_APPS:
 
 ```
@@ -51,7 +57,7 @@ Add to your MIDDLEWARE the following:
 ```
 # settings.py
 
-MIDDLEWARE_THIRD_PARTIES = [
+MIDDLEWARE = [
     ...
     'oauth2_provider.middleware.OAuth2TokenMiddleware',
 ]
@@ -68,14 +74,9 @@ AUTHENTICATION_BACKENDS = (
 )
 ```
 
-
-Producer configuration
-______________________
-
-If you wish to use this library to issue a token then we need to set up a
-`JWT_ISSUER` variable in our config, which will be the name of the issuer.
-Also you will create a RSA private key for it and will store it in a
-`JWT_PRIVATE_KEY_RSA_<JWT_ISSUER>` variable. For example:
+Now we need to set up a `JWT_ISSUER` variable in our config, which will be the
+name of the issuer. Also you will create a RSA private key for it and will
+store it in a `JWT_PRIVATE_KEY_RSA_<JWT_ISSUER>` variable. For example:
 
 
 ```
