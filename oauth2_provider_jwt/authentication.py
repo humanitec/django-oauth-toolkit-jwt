@@ -33,7 +33,7 @@ class JWTAuthentication(BaseAuthentication):
 
         try:
             payload = decode_jwt(jwt_value)
-        except jwt.ExpiredSignature:
+        except jwt.ExpiredSignatureError:
             msg = 'Signature has expired.'
             raise exceptions.AuthenticationFailed(msg)
         except jwt.DecodeError:

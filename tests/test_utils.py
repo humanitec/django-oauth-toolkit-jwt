@@ -122,7 +122,7 @@ class DecodeJWTTest(PythonTestCase):
         payload['exp'] = now - timedelta(seconds=1)
         payload['iat'] = now
         jwt_value = utils.encode_jwt(payload)
-        self.assertRaises(jwt.ExpiredSignature, utils.decode_jwt,
+        self.assertRaises(jwt.ExpiredSignatureError, utils.decode_jwt,
                           jwt_value)
 
     def test_decode_jwt(self):
