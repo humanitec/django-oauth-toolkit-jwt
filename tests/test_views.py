@@ -4,7 +4,7 @@ import json
 try:
     from urllib.parse import urlencode
 except ImportError:
-    from urllib import urlencode
+    from urllib import urlencode  # noqa
 try:
     from unittest.mock import patch
 except ImportError:

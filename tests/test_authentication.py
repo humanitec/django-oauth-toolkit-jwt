@@ -11,7 +11,15 @@ class JWTAuthenticationTests(TestCase):
     def setUp(self):
         self.client = APIClient(enforce_csrf_checks=True)
 
-    def test_get_no_jwt_header_failing_jwt_auth(self):
+    def test_get_no_jwt_header(self):
+        """
+        If there is no auth, it's part of a different layer if user needs
+        to be authenticated. That's why we return a positive response.
+        """
+        response = self.client.get('/jwt/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_no_jwt_token_failing_jwt_auth(self):
         response = self.client.get('/jwt/', HTTP_AUTHORIZATION='JWT')
         self.assertEqual(response.status_code, 401)
         self.assertEqual(

@@ -50,7 +50,7 @@ class JWTAuthentication(BaseAuthentication):
         auth_header_prefix = getattr(settings, 'JWT_AUTH_HEADER_PREFIX', 'JWT')
 
         if not auth:
-            if settings.JWT_AUTH_COOKIE:
+            if getattr(settings, 'JWT_AUTH_COOKIE', None):
                 return request.COOKIES.get(settings.JWT_AUTH_COOKIE)
             return None
 
