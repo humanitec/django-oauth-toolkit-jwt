@@ -76,7 +76,7 @@ AUTHENTICATION_BACKENDS = (
 
 Now we need to set up a `JWT_ISSUER` variable in our config, which will be the
 name of the issuer. Also you will create a RSA private key for it and will
-store it in a `JWT_PRIVATE_KEY_RSA_<JWT_ISSUER>` variable. For example:
+store it in a `JWT_PRIVATE_KEY_RSA_<JWT_ISSUER>` variable \*. For example:
 
 
 ```
@@ -91,6 +91,10 @@ MIIBOAIBAAJAbCmbRUsLrsv0/Cq7DVDpUooPS1V2sr0EhTZAZmJhid2o/+ya/28m
 -----END RSA PRIVATE KEY-----
 """
 ```
+
+\* *Note that storing hardcoded secrets in the settings is a bad practice and
+can lead to severe security breaches in your code. We recommend using
+environment variables for this purpose.*
 
 The payload of messages will be by default something like:
 
