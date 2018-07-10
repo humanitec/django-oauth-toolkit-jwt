@@ -3,6 +3,7 @@ import json
 
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.test.utils import override_settings
 from rest_framework.test import APIClient
 
 from oauth2_provider_jwt import utils
@@ -44,6 +45,7 @@ class JWTAuthenticationTests(TestCase):
             response.content,
             b'{"detail":"Incorrect authentication credentials."}')
 
+    @override_settings(JWT_AUTH_DISABLED=True)
     def test_post_valid_jwt_header(self):
         now = datetime.utcnow()
         payload = {
@@ -81,10 +83,18 @@ class JWTAuthenticationTests(TestCase):
         }
         jwt_value = utils.encode_jwt(payload)
 
-        response = self.client.post(
-            '/jwt_auth/', {'example': 'example'},
-            HTTP_AUTHORIZATION='JWT {}'.format(jwt_value),
-            content_type='application/json')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            json.loads(response.content), {'username': 'temporary'})
+        with override_settings(JWT_AUTH_DISABLED=False):
+            response = self.client.post(
+                '/jwt_auth/', {'example': 'example'},
+                HTTP_AUTHORIZATION='JWT {}'.format(jwt_value),
+                content_type='application/json')
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(
+                json.loads(response.content), {'username': 'temporary'})
+
+        with override_settings(JWT_AUTH_DISABLED=True):
+            response = self.client.post(
+                '/jwt_auth/', {'example': 'example'},
+                HTTP_AUTHORIZATION='JWT {}'.format(jwt_value),
+                content_type='application/json')
+            self.assertEqual(response.status_code, 403)

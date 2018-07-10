@@ -19,6 +19,7 @@ class TokenView(views.TokenView):
         if payload_enricher:
             fn = import_string(payload_enricher)
             extra_data = fn(request)
+        if request.POST.get('username'):
             extra_data['username'] = request.POST.get('username')
         payload = generate_payload(issuer, expires_in, **extra_data)
         token = encode_jwt(payload)
