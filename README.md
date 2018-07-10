@@ -155,6 +155,16 @@ hTZAZmJhid2o/+ya/28muuoQgknEoJz32bKeWuYZrFkRKUrGFnlxHwIDAQAB
 """
 ```
 
+By default authentication will be enabled, use `JWT_AUTH_DISABLED` setting variable to disable that feature:
+
+```
+#settings.py
+
+# Default JWT_AUTH_DISABLED=False
+JWT_AUTH_DISABLED=True
+
+```
+
 
 Local development
 =================

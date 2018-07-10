@@ -20,10 +20,22 @@ class MockView(APIView):
         return HttpResponse(response)
 
 
+class MockForAuthView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, _request):
+        return HttpResponse('mockforauthview-get')
+
+    def post(self, request):
+        response = json.dumps({"username": request.user.username})
+        return HttpResponse(response)
+
+
 urlpatterns = [
     url(r"^o/", include("oauth2_provider_jwt.urls",
                         namespace="oauth2_provider_jwt")),
     url(r'^jwt/$', MockView.as_view()),
+    url(r'^jwt_auth/$', MockForAuthView.as_view()),
 ]
 
 
