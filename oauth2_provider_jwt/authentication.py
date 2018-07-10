@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth import get_user_model
 from django.utils.encoding import smart_text
 import jwt
 from rest_framework import exceptions
@@ -43,7 +44,35 @@ class JWTAuthentication(BaseAuthentication):
             raise exceptions.AuthenticationFailed()
 
         self._add_session_details(request, payload)
-        return AnonymousUser(), payload
+
+        user = self.authenticate_credentials(payload)
+        return user, payload
+
+    def authenticate_credentials(self, payload):
+        """
+        Returns an active user that matches the payload's user id and email.
+        """
+        if getattr(settings, 'JWT_AUTH_DISABLED', False):
+            return AnonymousUser()
+
+        User = get_user_model()
+        username = payload.get('username')
+
+        if not username:
+            msg = 'Invalid payload.'
+            raise exceptions.AuthenticationFailed(msg)
+
+        try:
+            user = User.objects.get_by_natural_key(username)
+        except User.DoesNotExist:
+            msg = 'Invalid signature.'
+            raise exceptions.AuthenticationFailed(msg)
+
+        if not user.is_active:
+            msg = 'User account is disabled.'
+            raise exceptions.AuthenticationFailed(msg)
+
+        return user
 
     def _get_jwt_value(self, request):
         auth = get_authorization_header(request).split()
