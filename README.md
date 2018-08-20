@@ -25,7 +25,7 @@ git+https://github.com/Humanitec/django-oauth-toolkit-jwt#egg=django-oauth-toolk
 
 
 Producer configuration
-______________________
+----------------------
 
 To use this library to issue a token, configure the project as it follows:
 
@@ -127,7 +127,7 @@ def payload_enricher(request):
 
 
 Consumer configuration
-______________________
+----------------------
 
 In order to let users authenticate using JWT header and token we need to
 add the following configuration:
