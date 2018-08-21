@@ -66,5 +66,5 @@ def decode_jwt(jwt_value):
         raise ImproperlyConfigured('Missing setting {}'.format(
                                    public_key_name))
 
-    decoded = jwt.decode(jwt_value, public_key, algorithms='RS256')
+    decoded = jwt.decode(jwt_value, public_key, algorithms=['RS256'])
     return decoded
