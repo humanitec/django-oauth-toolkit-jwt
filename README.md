@@ -23,6 +23,19 @@ Add to your pip requirements:
 git+https://github.com/Humanitec/django-oauth-toolkit-jwt#egg=django-oauth-toolkit-jwt
 ```
 
+Generate keys
+-------------
+
+In order to generate a RS256 (RSA Signature with SHA-256) public and private
+keys, execute the following:
+
+```
+$ ssh-keygen -t rsa -b 4096 -f jwtRS256.key # don't add passphrase
+$ openssl rsa -in jwtRS256.key -pubout -outform PEM -out jwtRS256.key.pub
+$ cat jwtRS256.key
+$ cat jwtRS256.key.pub
+```
+
 
 Producer configuration
 ----------------------
@@ -75,8 +88,8 @@ AUTHENTICATION_BACKENDS = (
 ```
 
 Now we need to set up a `JWT_ISSUER` variable in our config, which will be the
-name of the issuer. Also you will create a RSA private key for it and will
-store it in a `JWT_PRIVATE_KEY_RSA_<JWT_ISSUER>` variable \*. For example:
+name of the issuer. Take the RSA256 private key that we genreated before
+and store it in a `JWT_PRIVATE_KEY_RSA_<JWT_ISSUER>` variable \*. For example:
 
 
 ```
@@ -142,7 +155,7 @@ REST_FRAMEWORK = {
 }
 ```
 
-Also, you will need to add to the settings every public RSA key of all the
+Also, you will need to add to the settings every public RSA256 key of all the
 possible token issuers using a variable `JWT_PUBLIC_KEY_RSA_<JWT_ISSUER>`:
 
 ```
@@ -155,14 +168,12 @@ hTZAZmJhid2o/+ya/28muuoQgknEoJz32bKeWuYZrFkRKUrGFnlxHwIDAQAB
 """
 ```
 
-By default authentication will be enabled, use `JWT_AUTH_DISABLED` setting variable to disable that feature:
+By default authentication will be enabled, use `JWT_AUTH_DISABLED` setting
+variable to disable that feature:
 
 ```
-#settings.py
-
-# Default JWT_AUTH_DISABLED=False
-JWT_AUTH_DISABLED=True
-
+# settings.py
+JWT_AUTH_DISABLED = True
 ```
 
 
