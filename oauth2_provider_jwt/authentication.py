@@ -13,11 +13,11 @@ from .utils import decode_jwt
 
 class JwtToken(dict):
     """
-    Mimics the structure of AbstractAccessToken so you can use standard Django Oauth Toolkit
-    permissions like `TokenHasScope`.
+    Mimics the structure of `AbstractAccessToken` so you can use standard
+    Django Oauth Toolkit permissions like `TokenHasScope`.
     """
     def __init__(self, payload):
-        super().__init__(**payload)
+        super(JwtToken, self).__init__(**payload)
 
     def __getattr__(self, item):
         return self[item]
