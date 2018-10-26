@@ -98,3 +98,35 @@ class JWTAuthenticationTests(TestCase):
                 HTTP_AUTHORIZATION='JWT {}'.format(jwt_value),
                 content_type='application/json')
             self.assertEqual(response.status_code, 403)
+
+    def test_post_valid_jwt_with_auth_and_scope_not_valid(self):
+        now = datetime.utcnow()
+        payload = {
+            'iss': 'issuer',
+            'exp': now + timedelta(seconds=100),
+            'iat': now,
+            'username': 'temporary',
+            'scope': 'read',  # Incorrect scope
+        }
+        jwt_value = utils.encode_jwt(payload)
+        response = self.client.post(
+            '/jwt_auth_scope/', {'example': 'example'},
+            HTTP_AUTHORIZATION='JWT {}'.format(jwt_value),
+            content_type='application/json')
+        self.assertEqual(response.status_code, 403)
+
+    def test_post_valid_jwt_with_auth_and_scope_is_valid(self):
+        now = datetime.utcnow()
+        payload = {
+            'iss': 'issuer',
+            'exp': now + timedelta(seconds=100),
+            'iat': now,
+            'username': 'temporary',
+            'scope': 'write',  # Correct scope
+        }
+        jwt_value = utils.encode_jwt(payload)
+        response = self.client.post(
+            '/jwt_auth_scope/', {'example': 'example'},
+            HTTP_AUTHORIZATION='JWT {}'.format(jwt_value),
+            content_type='application/json')
+        self.assertEqual(response.status_code, 200)
