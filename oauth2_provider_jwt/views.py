@@ -12,16 +12,20 @@ logger = logging.getLogger(__name__)
 
 
 class TokenView(views.TokenView):
-    def _get_access_token_jwt(self, request, expires_in):
+    def _get_access_token_jwt(self, request, content):
         extra_data = {}
         issuer = settings.JWT_ISSUER
         payload_enricher = getattr(settings, 'JWT_PAYLOAD_ENRICHER', None)
         if payload_enricher:
             fn = import_string(payload_enricher)
             extra_data = fn(request)
+
+        if 'scope' in content:
+            extra_data['scope'] = content['scope']
+
         if request.POST.get('username'):
             extra_data['username'] = request.POST.get('username')
-        payload = generate_payload(issuer, expires_in, **extra_data)
+        payload = generate_payload(issuer, content['expires_in'], **extra_data)
         token = encode_jwt(payload)
         return token
 
@@ -44,7 +48,7 @@ class TokenView(views.TokenView):
                     'Missing JWT configuration, skipping token build')
             else:
                 content['access_token_jwt'] = self._get_access_token_jwt(
-                    request, content['expires_in'])
+                    request, content)
                 try:
                     content = bytes(json.dumps(content), 'utf-8')
                 except TypeError:

@@ -1,6 +1,7 @@
 import base64
 import datetime
 import json
+
 try:
     from urllib.parse import urlencode
 except ImportError:
@@ -109,12 +110,14 @@ class PasswordTokenViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         content = json.loads(response.content.decode("utf-8"))
+        jwt_token = content["access_token_jwt"]
         self.assertEqual(content["token_type"], "Bearer")
-        self.assertIn(type(content["access_token_jwt"]).__name__,
-                      ('unicode', 'str'))
+        self.assertIn(type(jwt_token).__name__, ('unicode', 'str'))
         self.assertEqual(content["scope"], "read write")
         self.assertEqual(content["expires_in"],
                          oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
+        self.assertDictContainsSubset({'scope': 'read write'},
+                                      self.decode_jwt(jwt_token))
 
     @patch('oauth2_provider_jwt.views.TokenView._is_jwt_config_set')
     def test_do_not_get_token_missing_conf(self, mock_is_jwt_config_set):
@@ -159,10 +162,26 @@ class PasswordTokenViewTest(TestCase):
             **auth_headers)
         content = json.loads(response.content.decode("utf-8"))
         access_token_jwt = content["access_token_jwt"]
-        headers, payload, verify_signature = access_token_jwt.split(".")
-        payload += '=' * (-len(payload) % 4)  # add padding
-        payload_dict = json.loads(base64.b64decode(payload).decode("utf-8"))
-        self.assertDictContainsSubset({'sub': 'unique-user'}, payload_dict)
+        self.assertDictContainsSubset({'sub': 'unique-user'},
+                                      self.decode_jwt(access_token_jwt))
+
+    def test_get_custom_scope_in_jwt(self):
+        token_request_data = {
+            "grant_type": "password",
+            "scope": "read",
+            "username": "test_user",
+            "password": "123456",
+        }
+        auth_headers = get_basic_auth_header(self.application.client_id,
+                                             self.application.client_secret)
+
+        response = self.client.post(
+            reverse("oauth2_provider_jwt:token"), data=token_request_data,
+            **auth_headers)
+        content = json.loads(response.content.decode("utf-8"))
+        access_token_jwt = content["access_token_jwt"]
+        self.assertDictContainsSubset({'scope': 'read'},
+                                      self.decode_jwt(access_token_jwt))
 
     def test_refresh_token(self):
         access_token = AccessToken.objects.create(
@@ -190,3 +209,8 @@ class PasswordTokenViewTest(TestCase):
         content = json.loads(response.content.decode("utf-8"))
         self.assertIn(type(content["access_token_jwt"]).__name__,
                       ('unicode', 'str'))
+
+    def decode_jwt(self, access_token_jwt):
+        headers, payload, verify_signature = access_token_jwt.split(".")
+        payload += '=' * (-len(payload) % 4)  # add padding
+        return json.loads(base64.b64decode(payload).decode("utf-8"))
