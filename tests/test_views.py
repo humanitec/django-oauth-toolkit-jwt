@@ -208,7 +208,7 @@ class PasswordTokenViewTest(TestCase):
         self.assertEqual(400, response.status_code)
         self.assertEqual({
                         "error": "invalid_request",
-                        "error_description": "Request username doesn't match"
+                        "error_description": "Request username doesn't match "
                                              "username in original authorize",
                         }, response.json())
 

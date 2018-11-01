@@ -73,7 +73,7 @@ class TokenView(views.TokenView):
                     response.status_code = 400
                     response.content = json.dumps({
                         "error": "invalid_request",
-                        "error_description": "Request username doesn't match"
+                        "error_description": "Request username doesn't match "
                                              "username in original authorize",
                     })
         return response
