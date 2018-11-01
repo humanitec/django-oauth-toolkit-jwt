@@ -55,7 +55,6 @@ class TokenView(views.TokenView):
 
     def post(self, request, *args, **kwargs):
         response = super(TokenView, self).post(request, *args, **kwargs)
-
         content = ast.literal_eval(response.content.decode("utf-8"))
         if response.status_code == 200 and 'access_token' in content:
             if not TokenView._is_jwt_config_set():
