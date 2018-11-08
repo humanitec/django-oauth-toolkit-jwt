@@ -5,10 +5,15 @@ import logging
 from django.conf import settings
 from django.utils.module_loading import import_string
 from oauth2_provider import views
+from oauth2_provider.models import get_access_token_model
 
 from .utils import generate_payload, encode_jwt
 
 logger = logging.getLogger(__name__)
+
+
+class WrongUsername(Exception):
+    pass
 
 
 class TokenView(views.TokenView):
@@ -23,8 +28,17 @@ class TokenView(views.TokenView):
         if 'scope' in content:
             extra_data['scope'] = content['scope']
 
-        if request.POST.get('username'):
-            extra_data['username'] = request.POST.get('username')
+        username = request.POST.get('username')
+        if username:
+            # HACK: The only way to verify the username is to check the token.
+            #       This means an extra wasted database call
+            token = get_access_token_model().objects.get(
+                token=content['access_token']
+            )
+            if token.user.get_username() != username:
+                raise WrongUsername()
+            extra_data['username'] = username
+
         payload = generate_payload(issuer, content['expires_in'], **extra_data)
         token = encode_jwt(payload)
         return token
@@ -47,11 +61,19 @@ class TokenView(views.TokenView):
                 logger.warning(
                     'Missing JWT configuration, skipping token build')
             else:
-                content['access_token_jwt'] = self._get_access_token_jwt(
-                    request, content)
                 try:
-                    content = bytes(json.dumps(content), 'utf-8')
-                except TypeError:
-                    content = bytes(json.dumps(content).encode("utf-8"))
-                response.content = content
+                    content['access_token_jwt'] = self._get_access_token_jwt(
+                        request, content)
+                    try:
+                        content = bytes(json.dumps(content), 'utf-8')
+                    except TypeError:
+                        content = bytes(json.dumps(content).encode("utf-8"))
+                    response.content = content
+                except WrongUsername:
+                    response.status_code = 400
+                    response.content = json.dumps({
+                        "error": "invalid_request",
+                        "error_description": "Request username doesn't match "
+                                             "username in original authorize",
+                    })
         return response
