@@ -25,4 +25,19 @@ setup(
     packages=[
         'oauth2_provider_jwt',
     ],
+    name='django-oauth-toolkit-jwt',
+    version='0.5.2',
+    url='https://github.com/Humanitec/django-oauth-toolkit-jwt.git',
+    description='Extension that adds JWT support.',
+    provides=['oauth2_provider_jwt', ],
+    include_package_data=True,
+    classifiers=[
+        'Framework :: Django',
+        'Environment :: Web Environment',
+        'Programming Language :: Python',
+        'Intended Audience :: Developers',
+        'Operating System :: OS Independent',
+        'License :: OSI Approved :: BSD License',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+    ],
 )
