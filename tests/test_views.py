@@ -94,6 +94,10 @@ class PasswordTokenViewTest(TestCase):
     def test_is_jwt_config_not_set_missing_private_key(self):
         self.assertFalse(TokenView._is_jwt_config_set())
 
+    @override_settings(JWT_ID_ATTRIBUTE='')
+    def test_is_jwt_config_not_set_missing_id_attribute(self):
+        self.assertFalse(TokenView._is_jwt_config_set())
+
     def test_get_token(self):
         """
         Request an access token using Resource Owner Password Flow
@@ -154,7 +158,6 @@ class PasswordTokenViewTest(TestCase):
             'code': code,
             'grant_type': 'authorization_code',
             'redirect_uri': 'http://localhost:8002/callback',
-            'username': 'test_user',
         }
         response = self.client.post(reverse("oauth2_provider_jwt:token"), data)
         self.assertEqual(200, response.status_code)
@@ -201,6 +204,39 @@ class PasswordTokenViewTest(TestCase):
 
         payload_content = self.decode_jwt(access_token_jwt)
         self.assertEqual('test_user', payload_content['username'])
+        self.assertEqual('read write', payload_content['scope'])
+
+    @override_settings(JWT_ID_ATTRIBUTE='id')
+    def test_get_token_changed_id_attribute(self):
+        """
+        Request an access token using Implicit Flow
+        """
+        Application.objects.create(
+            client_id='user_app_id',
+            client_secret='user_app_secret',
+            client_type=Application.CLIENT_CONFIDENTIAL,
+            authorization_grant_type=Application.GRANT_IMPLICIT,
+            name='user app',
+            skip_authorization=True,
+            redirect_uris='http://localhost:8002/callback',
+        )
+        self.client.force_login(self.test_user)
+
+        response = self.client.get(
+            reverse("oauth2_provider_jwt:authorize") +
+            '?response_type=token&client_id=user_app_id')
+        self.assertEqual(302, response.status_code)
+        url = urlparse(response.url)
+        params = parse_qs(url.fragment)
+        self.assertEqual('Bearer', params['token_type'][0])
+        self.assertEqual('read write', params['scope'][0])
+
+        self.assertTrue(params['access_token'][0])
+        access_token_jwt = params['access_token_jwt'][0]
+        self.assertTrue(access_token_jwt)
+
+        payload_content = self.decode_jwt(access_token_jwt)
+        self.assertEqual(str(self.test_user.id), payload_content['id'])
         self.assertEqual('read write', payload_content['scope'])
 
     @patch('oauth2_provider_jwt.views.TokenView._is_jwt_config_set')

@@ -125,6 +125,7 @@ LOGGING = {
 # Library minimal configuration
 
 JWT_ISSUER = 'issuer'
+JWT_ID_ATTRIBUTE = 'username'
 
 JWT_PRIVATE_KEY_RSA_ISSUER = """
 -----BEGIN RSA PRIVATE KEY-----

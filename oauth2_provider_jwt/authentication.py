@@ -97,14 +97,17 @@ class JWTAuthentication(BaseAuthentication):
             return AnonymousUser()
 
         User = get_user_model()
-        username = payload.get('username')
+        username = payload.get(getattr(settings, 'JWT_ID_ATTRIBUTE'))
 
         if not username:
             msg = 'Invalid payload.'
             raise exceptions.AuthenticationFailed(msg)
 
         try:
-            user = User.objects.get_by_natural_key(username)
+            kwargs = {
+                getattr(settings, 'JWT_ID_ATTRIBUTE'): username
+            }
+            user = User.objects.get(**kwargs)
         except User.DoesNotExist:
             msg = 'Invalid signature.'
             raise exceptions.AuthenticationFailed(msg)
