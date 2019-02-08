@@ -173,7 +173,7 @@ class PasswordTokenViewTest(TestCase):
 
     def test_get_token_implicit(self):
         """
-        Request an access token using Resource Owner Password Flow
+        Request an access token using Implicit Flow
         """
         Application.objects.create(
             client_id='user_app_id',
