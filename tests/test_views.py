@@ -4,9 +4,10 @@ import json
 import re
 
 try:
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, urlparse, parse_qs
 except ImportError:
-    from urllib import urlencode  # noqa
+    from urllib import urlencode # noqa
+    from urlparse import urlparse, parse_qs
 try:
     from unittest.mock import patch
 except ImportError:
@@ -170,47 +171,37 @@ class PasswordTokenViewTest(TestCase):
         self.assertEqual('test_user', payload_content['username'])
         self.assertEqual('read write', payload_content['scope'])
 
-    def test_get_token_authorization_code_wrong_user(self):
+    def test_get_token_implicit(self):
         """
-        Fix for https://github.com/Humanitec/django-oauth-toolkit-jwt/issues/14
+        Request an access token using Resource Owner Password Flow
         """
         Application.objects.create(
             client_id='user_app_id',
             client_secret='user_app_secret',
             client_type=Application.CLIENT_CONFIDENTIAL,
-            authorization_grant_type=Application.GRANT_AUTHORIZATION_CODE,
+            authorization_grant_type=Application.GRANT_IMPLICIT,
             name='user app',
             skip_authorization=True,
             redirect_uris='http://localhost:8002/callback',
         )
-
         self.client.force_login(self.test_user)
-        response = self.client.get(reverse("oauth2_provider_jwt:authorize") +
-                                   '?response_type=code&client_id=user_app_id')
 
+        response = self.client.get(
+            reverse("oauth2_provider_jwt:authorize") +
+            '?response_type=token&client_id=user_app_id')
         self.assertEqual(302, response.status_code)
-        match = re.match(r'http://localhost:8002/callback\?code=(\w+)',
-                         response.url)
-        self.assertIsNotNone(match)
-        code = match.group(1)
+        url = urlparse(response.url)
+        params = parse_qs(url.fragment)
+        self.assertEqual('Bearer', params['token_type'][0])
+        self.assertEqual('read write', params['scope'][0])
 
-        # To simulate that the token call is normally made unauthenticated
-        self.client.logout()
-        data = {
-            'client_id': 'user_app_id',
-            'client_secret': 'user_app_secret',
-            'code': code,
-            'grant_type': 'authorization_code',
-            'redirect_uri': 'http://localhost:8002/callback',
-            'username': 'some_fake_user',  # Pass in wrong user
-        }
-        response = self.client.post(reverse("oauth2_provider_jwt:token"), data)
-        self.assertEqual(400, response.status_code)
-        self.assertEqual({
-                        "error": "invalid_request",
-                        "error_description": "Request username doesn't match "
-                                             "username in original authorize",
-                        }, response.json())
+        self.assertTrue(params['access_token'][0])
+        access_token_jwt = params['access_token_jwt'][0]
+        self.assertTrue(access_token_jwt)
+
+        payload_content = self.decode_jwt(access_token_jwt)
+        self.assertEqual('test_user', payload_content['username'])
+        self.assertEqual('read write', payload_content['scope'])
 
     @patch('oauth2_provider_jwt.views.TokenView._is_jwt_config_set')
     def test_do_not_get_token_missing_conf(self, mock_is_jwt_config_set):
