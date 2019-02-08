@@ -2,9 +2,16 @@ import ast
 import json
 import logging
 
+try:
+    from urllib.parse import urlencode, urlparse, parse_qs
+except ImportError:
+    from urllib import urlencode # noqa
+    from urlparse import urlparse, parse_qs
+
 from django.conf import settings
 from django.utils.module_loading import import_string
 from oauth2_provider import views
+from oauth2_provider.http import OAuth2ResponseRedirect
 from oauth2_provider.models import get_access_token_model
 
 from .utils import generate_payload, encode_jwt
@@ -14,6 +21,27 @@ logger = logging.getLogger(__name__)
 
 class WrongUsername(Exception):
     pass
+
+
+class JWTAuthorizationView(views.AuthorizationView):
+
+    def get(self, request, *args, **kwargs):
+        response = super(JWTAuthorizationView, self).get(request, *args,
+                                                         **kwargs)
+        if request.GET.get('response_type', None) == 'token' \
+                and response.status_code == 302:
+            url = urlparse(response.url)
+            params = parse_qs(url.fragment)
+            content = {
+                'access_token': params['access_token'][0],
+                'expires_in': int(params['expires_in'][0]),
+                'scope': params['scope'][0]
+            }
+            jwt = TokenView()._get_access_token_jwt(request, content)
+            response = OAuth2ResponseRedirect(
+                '{}&access_token_jwt={}'.format(response.url, jwt),
+                response.allowed_schemes)
+        return response
 
 
 class TokenView(views.TokenView):
@@ -28,16 +56,10 @@ class TokenView(views.TokenView):
         if 'scope' in content:
             extra_data['scope'] = content['scope']
 
-        username = request.POST.get('username')
-        if username:
-            # HACK: The only way to verify the username is to check the token.
-            #       This means an extra wasted database call
-            token = get_access_token_model().objects.get(
-                token=content['access_token']
-            )
-            if token.user.get_username() != username:
-                raise WrongUsername()
-            extra_data['username'] = username
+        token = get_access_token_model().objects.get(
+            token=content['access_token']
+        )
+        extra_data['username'] = token.user.username
 
         payload = generate_payload(issuer, content['expires_in'], **extra_data)
         token = encode_jwt(payload)
