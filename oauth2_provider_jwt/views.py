@@ -39,7 +39,7 @@ class JWTAuthorizationView(views.AuthorizationView):
             }
             jwt = TokenView()._get_access_token_jwt(request, content)
             response = OAuth2ResponseRedirect(
-                response.url + '&access_token_jwt=' + jwt,
+                '{}&access_token_jwt={}'.format(response.url, jwt),
                 response.allowed_schemes)
         return response
 
