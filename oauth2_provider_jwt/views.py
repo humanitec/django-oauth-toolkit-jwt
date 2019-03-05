@@ -32,15 +32,16 @@ class JWTAuthorizationView(views.AuthorizationView):
                 and response.status_code == 302:
             url = urlparse(response.url)
             params = parse_qs(url.fragment)
-            content = {
-                'access_token': params['access_token'][0],
-                'expires_in': int(params['expires_in'][0]),
-                'scope': params['scope'][0]
-            }
-            jwt = TokenView()._get_access_token_jwt(request, content)
-            response = OAuth2ResponseRedirect(
-                '{}&access_token_jwt={}'.format(response.url, jwt),
-                response.allowed_schemes)
+            if params:
+                content = {
+                    'access_token': params['access_token'][0],
+                    'expires_in': int(params['expires_in'][0]),
+                    'scope': params['scope'][0]
+                }
+                jwt = TokenView()._get_access_token_jwt(request, content)
+                response = OAuth2ResponseRedirect(
+                    '{}&access_token_jwt={}'.format(response.url, jwt),
+                    response.allowed_schemes)
         return response
 
 
