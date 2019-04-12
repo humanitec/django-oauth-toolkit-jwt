@@ -19,7 +19,7 @@ from .utils import generate_payload, encode_jwt
 logger = logging.getLogger(__name__)
 
 
-class WrongUsername(Exception):
+class MissingIdAttribute(Exception):
     pass
 
 
@@ -32,15 +32,16 @@ class JWTAuthorizationView(views.AuthorizationView):
                 and response.status_code == 302:
             url = urlparse(response.url)
             params = parse_qs(url.fragment)
-            content = {
-                'access_token': params['access_token'][0],
-                'expires_in': int(params['expires_in'][0]),
-                'scope': params['scope'][0]
-            }
-            jwt = TokenView()._get_access_token_jwt(request, content)
-            response = OAuth2ResponseRedirect(
-                '{}&access_token_jwt={}'.format(response.url, jwt),
-                response.allowed_schemes)
+            if params:
+                content = {
+                    'access_token': params['access_token'][0],
+                    'expires_in': int(params['expires_in'][0]),
+                    'scope': params['scope'][0]
+                }
+                jwt = TokenView()._get_access_token_jwt(request, content)
+                response = OAuth2ResponseRedirect(
+                    '{}&access_token_jwt={}'.format(response.url, jwt),
+                    response.allowed_schemes)
         return response
 
 
@@ -56,10 +57,15 @@ class TokenView(views.TokenView):
         if 'scope' in content:
             extra_data['scope'] = content['scope']
 
-        token = get_access_token_model().objects.get(
-            token=content['access_token']
-        )
-        extra_data['username'] = token.user.username
+        id_attribute = getattr(settings, 'JWT_ID_ATTRIBUTE', None)
+        if id_attribute:
+            token = get_access_token_model().objects.get(
+                token=content['access_token']
+            )
+            id_value = getattr(token.user, id_attribute, None)
+            if not id_value:
+                raise MissingIdAttribute()
+            extra_data[id_attribute] = str(id_value)
 
         payload = generate_payload(issuer, content['expires_in'], **extra_data)
         token = encode_jwt(payload)
@@ -70,7 +76,8 @@ class TokenView(views.TokenView):
         issuer = getattr(settings, 'JWT_ISSUER', '')
         private_key_name = 'JWT_PRIVATE_KEY_RSA_{}'.format(issuer.upper())
         private_key = getattr(settings, private_key_name, None)
-        if issuer and private_key:
+        id_attribute = getattr(settings, 'JWT_ID_ATTRIBUTE', None)
+        if issuer and private_key and id_attribute:
             return True
         else:
             return False
@@ -91,11 +98,11 @@ class TokenView(views.TokenView):
                     except TypeError:
                         content = bytes(json.dumps(content).encode("utf-8"))
                     response.content = content
-                except WrongUsername:
+                except MissingIdAttribute:
                     response.status_code = 400
                     response.content = json.dumps({
                         "error": "invalid_request",
-                        "error_description": "Request username doesn't match "
-                                             "username in original authorize",
+                        "error_description": "App not configured correctly. "
+                                             "Please set JWT_ID_ATTRIBUTE.",
                     })
         return response
