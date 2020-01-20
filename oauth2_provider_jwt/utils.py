@@ -38,12 +38,15 @@ def encode_jwt(payload, headers=None):
     :type headers: dict, None
     :rtype: str
     """
-    private_key_name = 'JWT_PRIVATE_KEY_RSA_{}'.format(payload['iss'].upper())
+    # RS256 in default, because hardcoded legacy
+    algorithm = getattr(settings, 'JWT_ENC_ALGORITHM', 'RS256')
+
+    private_key_name = 'JWT_PRIVATE_KEY_{}'.format(payload['iss'].upper())
     private_key = getattr(settings, private_key_name, None)
     if not private_key:
         raise ImproperlyConfigured('Missing setting {}'.format(
             private_key_name))
-    encoded = jwt.encode(payload, private_key, algorithm='RS256',
+    encoded = jwt.encode(payload, private_key, algorithm=algorithm,
                          headers=headers)
     return encoded.decode("utf-8")
 
@@ -60,11 +63,12 @@ def decode_jwt(jwt_value):
     payload_enc += '=' * (-len(payload_enc) % 4)  # add padding
     payload = json.loads(base64.b64decode(payload_enc).decode("utf-8"))
 
-    public_key_name = 'JWT_PUBLIC_KEY_RSA_{}'.format(payload['iss'].upper())
+    algorithms = getattr(settings, 'JWT_JWS_ALGORITHMS', ['HS256', 'RS256'])
+    public_key_name = 'JWT_PUBLIC_KEY_{}'.format(payload['iss'].upper())
     public_key = getattr(settings, public_key_name, None)
     if not public_key:
         raise ImproperlyConfigured('Missing setting {}'.format(
                                    public_key_name))
 
-    decoded = jwt.decode(jwt_value, public_key, algorithms=['RS256'])
+    decoded = jwt.decode(jwt_value, public_key, algorithms=algorithms)
     return decoded

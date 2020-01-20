@@ -74,23 +74,23 @@ class PasswordTokenViewTest(TestCase):
         self.dev_user.delete()
 
     @override_settings(JWT_ISSUER='api')
-    @override_settings(JWT_PRIVATE_KEY_RSA_API='somevalue')
+    @override_settings(JWT_PRIVATE_KEY_API='somevalue')
     def test_is_jwt_config_set(self):
         self.assertTrue(TokenView._is_jwt_config_set())
 
     @override_settings(JWT_ISSUER='')
-    @override_settings(JWT_PRIVATE_KEY_RSA_API='somevalue')
+    @override_settings(JWT_PRIVATE_KEY_API='somevalue')
     def test_is_jwt_config_not_set_missing_issuer(self):
         self.assertFalse(TokenView._is_jwt_config_set())
 
     @override_settings()
-    @override_settings(JWT_PRIVATE_KEY_RSA_API='somevalue')
+    @override_settings(JWT_PRIVATE_KEY_API='somevalue')
     def test_is_jwt_config_not_set_none_issuer(self):
         del settings.JWT_ISSUER
         self.assertFalse(TokenView._is_jwt_config_set())
 
     @override_settings(JWT_ISSUER='api')
-    @override_settings(JWT_PRIVATE_KEY_RSA_API='')
+    @override_settings(JWT_PRIVATE_KEY_API='')
     def test_is_jwt_config_not_set_missing_private_key(self):
         self.assertFalse(TokenView._is_jwt_config_set())
 
