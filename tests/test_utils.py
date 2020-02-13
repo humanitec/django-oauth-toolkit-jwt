@@ -74,13 +74,13 @@ class EncodeJWTTest(PythonTestCase):
             'org': 'some_org',
         }
 
-    @override_settings(JWT_PRIVATE_KEY_RSA_ISSUER='')
+    @override_settings(JWT_PRIVATE_KEY_ISSUER='')
     def test_encode_jwt_no_private_key_in_setting(self):
         payload = self._get_payload()
         self.assertRaises(ImproperlyConfigured,
                           utils.encode_jwt, payload)
 
-    def test_encode_jwt(self):
+    def test_encode_jwt_rs256(self):
         payload_in = self._get_payload()
         encoded = utils.encode_jwt(payload_in)
         self.assertIn(type(encoded).__name__, ('unicode', 'str'))
@@ -91,6 +91,21 @@ class EncodeJWTTest(PythonTestCase):
         payload += '=' * (-len(payload) % 4)  # add padding
         self.assertEqual(
             json.loads(base64.b64decode(payload).decode("utf-8")),
+            payload_in)
+
+    @override_settings(JWT_PRIVATE_KEY_ISSUER='test')
+    @override_settings(JWT_ENC_ALGORITHM='HS256')
+    def test_encode_jwt_hs256(self):
+        payload_in = self._get_payload()
+        encoded = utils.encode_jwt(payload_in)
+        self.assertIn(type(encoded).__name__, ('unicode', 'str'))
+        headers, payload, verify_signature = encoded.split('.')
+        self.assertDictEqual(
+            json.loads(base64.b64decode(headers)),
+            {'typ': 'JWT', 'alg': 'HS256'})
+        payload += '=' * (-len(payload) % 4)
+        self.assertEqual(
+            json.loads(base64.b64decode(payload).decode('utf-8')),
             payload_in)
 
 
@@ -109,7 +124,7 @@ class DecodeJWTTest(PythonTestCase):
     def test_decode_jwt_invalid(self):
         self.assertRaises(jwt.InvalidTokenError, utils.decode_jwt, 'abc')
 
-    @override_settings(JWT_PUBLIC_KEY_RSA_ISSUER='')
+    @override_settings(JWT_PUBLIC_KEY_ISSUER='')
     def test_decode_jwt_public_key_not_found(self):
         payload = self._get_payload()
         jwt_value = utils.encode_jwt(payload)
@@ -125,7 +140,16 @@ class DecodeJWTTest(PythonTestCase):
         self.assertRaises(jwt.ExpiredSignatureError, utils.decode_jwt,
                           jwt_value)
 
-    def test_decode_jwt(self):
+    def test_decode_jwt_rs256(self):
+        payload = self._get_payload()
+        jwt_value = utils.encode_jwt(payload)
+        payload_out = utils.decode_jwt(jwt_value)
+        self.assertDictEqual(payload, payload_out)
+
+    @override_settings(JWT_PRIVATE_KEY_ISSUER='test')
+    @override_settings(JWT_PUBLIC_KEY_ISSUER='test')
+    @override_settings(JWT_ENC_ALGORITHM='HS256')
+    def test_decode_jwt_hs256(self):
         payload = self._get_payload()
         jwt_value = utils.encode_jwt(payload)
         payload_out = utils.decode_jwt(jwt_value)

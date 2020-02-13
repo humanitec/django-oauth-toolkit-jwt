@@ -130,3 +130,22 @@ class JWTAuthenticationTests(TestCase):
             HTTP_AUTHORIZATION='JWT {}'.format(jwt_value),
             content_type='application/json')
         self.assertEqual(response.status_code, 200)
+
+
+class ECDSAJWTAuth(JWTAuthenticationTests):
+    @override_settings(JWT_ENC_ALGORITHM="ES256")
+    @override_settings(JWT_PRIVATE_KEY_ISSUER="""-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAaAAAABNlY2RzYS
+1zaGEyLW5pc3RwMjU2AAAACG5pc3RwMjU2AAAAQQTRAzrSN7dFmGa05mrQaKfP2xplEFo/
+1InJc3P+pcy1zgN427Y96mmPMMkx1zBk9S0uDFX5WlEJ9UuRxmf+yceVAAAAsJLFlSOSxZ
+UjAAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNEDOtI3t0WYZrTm
+atBop8/bGmUQWj/Uiclzc/6lzLXOA3jbtj3qaY8wyTHXMGT1LS4MVflaUQn1S5HGZ/7Jx5
+UAAAAhAJlPEfG7s+7zces2RHc1txeyyjwZxCqUqs25kvtO36nrAAAAFnRob21hc0B3b3Jr
+c3RhdGlvbi1kZWIB
+-----END OPENSSH PRIVATE KEY-----""")
+    @override_settings(JWT_PUBLIC_KEY_ISSUER="ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNEDOtI3t0WYZrTmatBop8/bGmUQWj/Uiclzc/6lzLXOA3jbtj3qaY8wyTHXMGT1LS4MVflaUQn1S5HGZ/7Jx5U= thomas@workstation-deb")  # noqa: E501
+    def setUp(self):
+        self.client = APIClient(enforce_csrf_checks=True)
+        User = get_user_model()
+        User.objects.create_user(
+            'temporary', 'temporary@gmail.com', 'temporary')
