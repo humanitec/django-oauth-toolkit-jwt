@@ -26,7 +26,7 @@ setup(
         'oauth2_provider_jwt',
     ],
     name='django-oauth-toolkit-jwt',
-    version='0.6.0',
+    version='0.7.0',
     url='https://github.com/Humanitec/django-oauth-toolkit-jwt.git',
     description='Extension that adds JWT support.',
     provides=['oauth2_provider_jwt', ],

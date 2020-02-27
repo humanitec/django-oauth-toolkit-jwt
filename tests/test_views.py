@@ -3,15 +3,8 @@ import datetime
 import json
 import re
 
-try:
-    from urllib.parse import urlencode, urlparse, parse_qs
-except ImportError:
-    from urllib import urlencode # noqa
-    from urlparse import urlparse, parse_qs
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
+from urllib.parse import urlencode, urlparse, parse_qs  # noqa
+from unittest.mock import patch
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -122,8 +115,9 @@ class PasswordTokenViewTest(TestCase):
         self.assertEqual(content["scope"], "read write")
         self.assertEqual(content["expires_in"],
                          oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
-        self.assertDictContainsSubset({'scope': 'read write'},
-                                      self.decode_jwt(jwt_token))
+        self.assertTrue('scope' in self.decode_jwt(jwt_token))
+        self.assertEqual(self.decode_jwt(jwt_token).get('scope'),
+                         'read write')
 
     def test_get_token_authorization_code(self):
         """
@@ -282,8 +276,9 @@ class PasswordTokenViewTest(TestCase):
             **auth_headers)
         content = json.loads(response.content.decode("utf-8"))
         access_token_jwt = content["access_token_jwt"]
-        self.assertDictContainsSubset({'sub': 'unique-user'},
-                                      self.decode_jwt(access_token_jwt))
+        self.assertTrue('sub' in self.decode_jwt(access_token_jwt))
+        self.assertEqual(self.decode_jwt(access_token_jwt).get('sub'),
+                         'unique-user')
 
     def test_get_custom_scope_in_jwt(self):
         token_request_data = {
@@ -300,8 +295,9 @@ class PasswordTokenViewTest(TestCase):
             **auth_headers)
         content = json.loads(response.content.decode("utf-8"))
         access_token_jwt = content["access_token_jwt"]
-        self.assertDictContainsSubset({'scope': 'read'},
-                                      self.decode_jwt(access_token_jwt))
+        self.assertTrue('scope' in self.decode_jwt(access_token_jwt))
+        self.assertEqual(self.decode_jwt(access_token_jwt).get('scope'),
+                         'read')
 
     def test_refresh_token(self):
         access_token = AccessToken.objects.create(
