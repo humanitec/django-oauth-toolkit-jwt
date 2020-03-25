@@ -14,7 +14,7 @@ services:
     entrypoint:
       - /home/python/.local/bin/tox
       - -e
-      - py38-django111,py38-django22,py38-django30,flake8
+      - py38-django22,py38-django30,flake8
 
   dot_jwt_37:
     build:
@@ -29,7 +29,7 @@ services:
     entrypoint:
       - /home/python/.local/bin/tox
       - -e
-      - py37-django111,py37-django22,py37-django30,flake8
+      - py37-django22,py37-django30,flake8
 
   dot_jwt_36:
     build:
@@ -44,19 +44,4 @@ services:
     entrypoint:
       - /home/python/.local/bin/tox
       - -e
-      - py36-django111,py36-django22,py36-django30,flake8
-
-  dot_jwt_27:
-    build:
-      context: .
-      args:
-        - PY_VERSION=2.7
-      dockerfile: Dockerfile.dev
-    container_name: dot_jwt_27
-    image: dot_jwt_27
-    volumes:
-      - .:/home/python/code
-    entrypoint:
-     - /home/python/.local/bin/tox
-     - -e
-     - py27-django111,py27-django22,flake8
+      - py36-django22,py36-django30,flake8

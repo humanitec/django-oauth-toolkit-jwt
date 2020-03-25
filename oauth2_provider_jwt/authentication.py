@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.auth import get_user_model
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 import jwt
 from rest_framework import exceptions
 from rest_framework.authentication import (
@@ -127,7 +127,7 @@ class JWTAuthentication(BaseAuthentication):
                 return request.COOKIES.get(settings.JWT_AUTH_COOKIE)
             return None
 
-        if smart_text(auth[0]) != auth_header_prefix:
+        if smart_str(auth[0]) != auth_header_prefix:
             return None
 
         if len(auth) == 1:

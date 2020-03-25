@@ -218,11 +218,11 @@ docker-compose run dot_jwt
 ```
 
 ----------
-To run the tests only for Python 2.7:
+To run the tests only for Python 3.6:
 
 ```shell script
-docker-compose run dot_jwt_27
+docker-compose run dot_jwt_36
 ```
 
-There are tests configured for all currently supported Python-Versions ( and sadly 2.7).
-Just exchange the suffix of the docker-compose service tag with zour major-minor combination.
+There are tests configured for all currently supported Python-Versions.
+Just exchange the suffix of the docker-compose service tag with your major-minor combination.

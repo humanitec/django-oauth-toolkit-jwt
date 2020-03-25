@@ -1,10 +1,7 @@
 import base64
 from datetime import datetime, timedelta
 import json
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
+from unittest.mock import patch
 from unittest import TestCase as PythonTestCase
 
 from django.core.exceptions import ImproperlyConfigured

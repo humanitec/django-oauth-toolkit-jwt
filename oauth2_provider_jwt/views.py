@@ -2,11 +2,7 @@ import ast
 import json
 import logging
 
-try:
-    from urllib.parse import urlencode, urlparse, parse_qs
-except ImportError:
-    from urllib import urlencode # noqa
-    from urlparse import urlparse, parse_qs
+from urllib.parse import urlencode, urlparse, parse_qs  # noqa
 
 from django.conf import settings
 from django.utils.module_loading import import_string
