@@ -107,15 +107,21 @@ AUTHENTICATION_BACKENDS = (
 ```
 
 Now we need to set up a `JWT_ISSUER` variable in our config, which will be the
-name of the issuer. Take the private key that we genreated before
-and store it in a `JWT_PRIVATE_KEY_<JWT_ISSUER>` variable \*. Also you have to
-set your JWT-encoding Algorithm if it's different than `RS256` \**! For example:
+name of the issuer. Take the private key that we generated before
+and store it in a `JWT_PRIVATE_KEY_<JWT_ISSUER>` variable. Finally, define the
+ID attribute you wish to use in `JWT_ID_ATTRIBUTE`. While this can be any
+attribute on your user model it should be unique.
 
+Also you have to set your JWT-encoding Algorithm if it's different than
+`RS256`.
+
+For example:
 
 ```python
 # settings.py
 
 JWT_ISSUER = 'OneIssuer'
+JWT_ID_ATTRIBUTE = 'email'
 JWT_PRIVATE_KEY_ONEISSUER = """
 -----BEGIN RSA PRIVATE KEY-----
 MIIBOAIBAAJAbCmbRUsLrsv0/Cq7DVDpUooPS1V2sr0EhTZAZmJhid2o/+ya/28m
