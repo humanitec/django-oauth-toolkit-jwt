@@ -90,6 +90,20 @@ class EncodeJWTTest(PythonTestCase):
             json.loads(base64.b64decode(payload).decode("utf-8")),
             payload_in)
 
+    def test_encode_jwt_explicit_issuer(self):
+        payload_in = self._get_payload()
+        payload_in['iss'] = 'different-issuer'
+        encoded = utils.encode_jwt(payload_in, 'issuer')
+        self.assertIn(type(encoded).__name__, ('unicode', 'str'))
+        headers, payload, verify_signature = encoded.split(".")
+        self.assertDictEqual(
+            json.loads(base64.b64decode(headers)),
+            {"typ": "JWT", "alg": "RS256"})
+        payload += '=' * (-len(payload) % 4)  # add padding
+        self.assertEqual(
+            json.loads(base64.b64decode(payload).decode("utf-8")),
+            payload_in)
+
     @override_settings(JWT_PRIVATE_KEY_ISSUER='test')
     @override_settings(JWT_ENC_ALGORITHM='HS256')
     def test_encode_jwt_hs256(self):
@@ -141,6 +155,13 @@ class DecodeJWTTest(PythonTestCase):
         payload = self._get_payload()
         jwt_value = utils.encode_jwt(payload)
         payload_out = utils.decode_jwt(jwt_value)
+        self.assertDictEqual(payload, payload_out)
+
+    def test_decode_jwt_explicit_issuer(self):
+        payload = self._get_payload()
+        payload['iss'] = 'different-issuer'
+        jwt_value = utils.encode_jwt(payload, 'issuer')
+        payload_out = utils.decode_jwt(jwt_value, 'issuer')
         self.assertDictEqual(payload, payload_out)
 
     @override_settings(JWT_PRIVATE_KEY_ISSUER='test')

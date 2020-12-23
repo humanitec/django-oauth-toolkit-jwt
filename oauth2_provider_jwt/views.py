@@ -45,26 +45,38 @@ class TokenView(views.TokenView):
     def _get_access_token_jwt(self, request, content):
         extra_data = {}
         issuer = settings.JWT_ISSUER
-        payload_enricher = getattr(settings, 'JWT_PAYLOAD_ENRICHER', None)
-        if payload_enricher:
-            fn = import_string(payload_enricher)
-            extra_data = fn(request)
+
+        token = get_access_token_model().objects.get(
+            token=content['access_token']
+        )
 
         if 'scope' in content:
             extra_data['scope'] = content['scope']
 
         id_attribute = getattr(settings, 'JWT_ID_ATTRIBUTE', None)
         if id_attribute:
-            token = get_access_token_model().objects.get(
-                token=content['access_token']
-            )
             id_value = getattr(token.user, id_attribute, None)
             if not id_value:
                 raise MissingIdAttribute()
             extra_data[id_attribute] = str(id_value)
 
         payload = generate_payload(issuer, content['expires_in'], **extra_data)
-        token = encode_jwt(payload)
+
+        payload_enricher = getattr(settings, 'JWT_PAYLOAD_ENRICHER', None)
+        if payload_enricher:
+            fn = import_string(payload_enricher)
+            enriched_data = fn(
+                request=request,
+                token_content=content,
+                token_obj=token,
+                current_claims=payload)
+
+            if getattr(settings, 'JWT_PAYLOAD_ENRICHER_OVERWRITE', False):
+                payload = enriched_data
+            else:
+                payload.update(enriched_data)
+
+        token = encode_jwt(payload, issuer)
         return token
 
     @staticmethod

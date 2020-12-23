@@ -146,7 +146,9 @@ The payload of messages will be by default something like:
 {
     "iss": "OneIssuer",
     "exp": 1234567890,
-    "iat": 1234567789
+    "iat": 1234567789,
+    "email": "user@domain.com",
+    "scope": "read write"
 }
 ```
 
@@ -157,14 +159,41 @@ function that will enrich the payload and set the location to it in the
 ```python
 # settings.py
 
+# Define the function to be called when creating a new JWT
 JWT_PAYLOAD_ENRICHER = 'myapp.jwt_utils.payload_enricher'
 
+# Ovewrite all of the toolkit's default JWT claims with those provided by the function
+# Useful if you want to design your own token payload (Default: False which
+# performs a `dict().update(payload_enricher(...))`)
+JWT_PAYLOAD_ENRICHER_OVERWRITE = False
+```
 
+```python
 # myproject/myapp/jwt_utils.py
 
-def payload_enricher(request):
+def payload_enricher(**kwargs):
+    # Keyword Args: request, token_content, token_obj, current_claims
+
+    # The Django HTTPRequest object
+    request = kwargs.pop('request', None)
+
+    # Dictionary of the content of the Oauth response. Includes values like
+    # access_token, expires_in, token_type, refresh_token, scope
+    content = kwargs.pop('token_content', None)
+
+    # The oauth2_provider access token (by default:
+    # oauth2_provider.models.AccessToken)
+    token = kwargs.pop('token_obj', None)
+
+    # The automatically generated claims. This usually includes your
+    # JWT_ID_ATTRIBUTE and scope. This can be useful if you want to use
+    # JWT_PAYLOAD_ENRICHER_OVERWRITE mode.
+    current_claims = kwargs.pop('current_claims', None)
+
+    # Values returned here must be serializable by json.dumps
     return {
-        'sub': 'mysubject',
+        'sub': token.user.pk,
+        'preferred_username': token.user.username,
         ...
     }
 ```

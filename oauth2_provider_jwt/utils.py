@@ -32,16 +32,23 @@ def generate_payload(issuer, expires_in, **extra_data):
     return payload
 
 
-def encode_jwt(payload, headers=None):
-    """
+def encode_jwt(payload, issuer=None, headers=None):
+    """Sign and encode the provided ``payload`` as ``issuer``.
     :type payload: dict
+    :type issuer: str, None
     :type headers: dict, None
     :rtype: str
     """
+    if not issuer and 'iss' in payload:
+        issuer = payload['iss']
+    elif not issuer and 'iss' not in payload:
+        raise ValueError(
+            'Unable to determine issuer. Token missing iss claim')
+
     # RS256 in default, because hardcoded legacy
     algorithm = getattr(settings, 'JWT_ENC_ALGORITHM', 'RS256')
 
-    private_key_name = 'JWT_PRIVATE_KEY_{}'.format(payload['iss'].upper())
+    private_key_name = 'JWT_PRIVATE_KEY_{}'.format(issuer.upper())
     private_key = getattr(settings, private_key_name, None)
     if not private_key:
         raise ImproperlyConfigured('Missing setting {}'.format(
@@ -51,9 +58,10 @@ def encode_jwt(payload, headers=None):
     return encoded.decode("utf-8")
 
 
-def decode_jwt(jwt_value):
+def decode_jwt(jwt_value, issuer=None):
     """
     :type jwt_value: str
+    :type issuer: str, None
     """
     try:
         headers_enc, payload_enc, verify_signature = jwt_value.split(".")
@@ -63,8 +71,14 @@ def decode_jwt(jwt_value):
     payload_enc += '=' * (-len(payload_enc) % 4)  # add padding
     payload = json.loads(base64.b64decode(payload_enc).decode("utf-8"))
 
+    if not issuer and 'iss' in payload:
+        issuer = payload['iss']
+    elif not issuer and 'iss' not in payload:
+        raise ValueError(
+            'Unable to determine issuer. Token missing iss claim')
+
     algorithms = getattr(settings, 'JWT_JWS_ALGORITHMS', ['HS256', 'RS256'])
-    public_key_name = 'JWT_PUBLIC_KEY_{}'.format(payload['iss'].upper())
+    public_key_name = 'JWT_PUBLIC_KEY_{}'.format(issuer.upper())
     public_key = getattr(settings, public_key_name, None)
     if not public_key:
         raise ImproperlyConfigured('Missing setting {}'.format(
