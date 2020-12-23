@@ -36,9 +36,22 @@ def get_basic_auth_header(user, password):
     return auth_headers
 
 
-def payload_enricher(request):
+def payload_enricher(request, token_content, token_obj, current_claims):
+    # Explicit parameters used here to validate call
+    from django.http import HttpRequest
+    from oauth2_provider.models import AccessToken
+
+    assert isinstance(request, HttpRequest), \
+        'payload enrichment function expecting HttpResponse object'
+    assert 'access_token' in token_content, \
+        'payload enrichment function expecting oauth token data'
+    assert isinstance(token_obj, AccessToken), \
+        'payload enrichment function expecting oauth2 AccessToken model'
+    assert 'iss' in current_claims, \
+        'payload enrichment function expecting default current_claims'
+
     return {
-        'sub': 'unique-user',
+        'sub': token_obj.user.pk,
     }
 
 
@@ -110,14 +123,25 @@ class PasswordTokenViewTest(TestCase):
 
         content = json.loads(response.content.decode("utf-8"))
         jwt_token = content["access_token_jwt"]
+        jwt = self.decode_jwt(jwt_token)
+
         self.assertEqual(content["token_type"], "Bearer")
         self.assertIn(type(jwt_token).__name__, ('unicode', 'str'))
         self.assertEqual(content["scope"], "read write")
         self.assertEqual(content["expires_in"],
                          oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
-        self.assertTrue('scope' in self.decode_jwt(jwt_token))
-        self.assertEqual(self.decode_jwt(jwt_token).get('scope'),
-                         'read write')
+
+        # Validate no unexpected data was included
+        self.assertEqual(len(jwt), 5)
+
+        self.assertTrue('iss' in jwt)
+        self.assertTrue('exp' in jwt)
+        self.assertTrue('iat' in jwt)
+        self.assertTrue('scope' in jwt)
+        self.assertTrue('username' in jwt)
+        self.assertEqual(jwt.get('iss'), settings.JWT_ISSUER)
+        self.assertEqual(jwt.get('username'), self.test_user.username)
+        self.assertEqual(jwt.get('scope'), 'read write')
 
     def test_get_token_authorization_code(self):
         """
@@ -262,6 +286,8 @@ class PasswordTokenViewTest(TestCase):
 
     @override_settings(
         JWT_PAYLOAD_ENRICHER='tests.test_views.payload_enricher')
+    @override_settings(
+        JWT_PAYLOAD_ENRICHER_OVERWRITE=False)
     def test_get_enriched_jwt(self):
         token_request_data = {
             "grant_type": "password",
@@ -276,9 +302,42 @@ class PasswordTokenViewTest(TestCase):
             **auth_headers)
         content = json.loads(response.content.decode("utf-8"))
         access_token_jwt = content["access_token_jwt"]
-        self.assertTrue('sub' in self.decode_jwt(access_token_jwt))
-        self.assertEqual(self.decode_jwt(access_token_jwt).get('sub'),
-                         'unique-user')
+        jwt = self.decode_jwt(access_token_jwt)
+
+        # Validate the token was enriched
+        self.assertTrue('sub' in jwt)
+        self.assertEqual(jwt.get('sub'), self.test_user.pk)
+
+        # Validate the token was extended rather than overwritten
+        self.assertTrue('username' in jwt)
+        self.assertEqual(jwt.get('username'), self.test_user.username)
+
+    @override_settings(
+        JWT_PAYLOAD_ENRICHER='tests.test_views.payload_enricher')
+    @override_settings(
+        JWT_PAYLOAD_ENRICHER_OVERWRITE=True)
+    def test_overwrite_enriched_jwt(self):
+        token_request_data = {
+            "grant_type": "password",
+            "username": "test_user",
+            "password": "123456",
+        }
+        auth_headers = get_basic_auth_header(self.application.client_id,
+                                             self.application.client_secret)
+
+        response = self.client.post(
+            reverse("oauth2_provider_jwt:token"), data=token_request_data,
+            **auth_headers)
+        content = json.loads(response.content.decode("utf-8"))
+        access_token_jwt = content["access_token_jwt"]
+        jwt = self.decode_jwt(access_token_jwt)
+
+        # Validate the token was enriched
+        self.assertTrue('sub' in jwt)
+        self.assertEqual(jwt.get('sub'), self.test_user.pk)
+
+        # Validate the token was overwritten
+        self.assertTrue(len(jwt) == 1)
 
     def test_get_custom_scope_in_jwt(self):
         token_request_data = {
