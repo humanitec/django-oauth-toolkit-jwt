@@ -32,8 +32,13 @@ In order to generate a RS[256, 384, 512] (RSA Signature with SHA-[256, 384, 512]
 keys, execute the following:
 
 ```shell script
-ssh-keygen -t rsa -b 4096 -f jwtRS256.key # don't add passphrase
-openssl rsa -in jwtRS256.key -pubout -outform PEM -out jwtRS256.key.pub
+# With ssh-keygen
+ssh-keygen -t rsa -P "" -b 4096 -m PEM -f jwtRS256.key
+ssh-keygen -e -m PEM -f jwtRS256.key > jwtRS256.key.pub
+# or with openssl
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -outform PEM -out jwtRS256.key
+openssl rsa -pubout -in jwtRS256.key -out jwtRS256.key.pub
+# Verify results
 cat jwtRS256.key
 cat jwtRS256.key.pub
 ```
